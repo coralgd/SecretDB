@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SecretDB Console</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <h1>SecretDB Console</h1>
+      <p>Локальная защищённая структура данных (позже можно подключить Firebase).</p>
+    </header>
+
+    <main class="layout-grid">
+      <section class="panel">
+        <h2>Базы данных</h2>
+        <form id="db-form" class="row-form">
+          <input id="db-name" type="text" placeholder="Название базы" required />
+          <button type="submit">Создать базу</button>
+        </form>
+        <ul id="db-list" class="list"></ul>
+      </section>
+
+      <section class="panel">
+        <h2>Разделы выбранной базы</h2>
+        <div id="selected-db-name" class="selected-mark">База не выбрана</div>
+        <form id="section-form" class="row-form">
+          <input id="section-name" type="text" placeholder="Название раздела" required />
+          <input id="section-key" type="text" placeholder="Ключ доступа" required />
+          <button type="submit">Добавить раздел</button>
+        </form>
+        <ul id="section-list" class="list"></ul>
+      </section>
+
+      <section class="panel panel-wide">
+        <h2>Содержимое раздела</h2>
+        <div id="section-lock" class="selected-mark">Откройте раздел по ключу</div>
+        <form id="unlock-form" class="row-form inline">
+          <input id="unlock-key" type="text" placeholder="Введите ключ" required />
+          <button type="submit">Открыть</button>
+        </form>
+        <form id="entry-form" class="stack-form hidden">
+          <input id="entry-title" type="text" placeholder="Заголовок записи" required />
+          <textarea id="entry-content" placeholder="Секретные данные" required></textarea>
+          <button type="submit">Сохранить запись</button>
+        </form>
+        <ul id="entry-list" class="list"></ul>
+      </section>
+    </main>
+  </div>
+
+  <template id="item-template">
+    <li class="item-row">
+      <button class="item-select"></button>
+      <button class="item-delete">Удалить</button>
+    </li>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
