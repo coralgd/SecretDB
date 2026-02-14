@@ -9,6 +9,7 @@ const state = {
 
 const dbForm = document.getElementById("db-form");
 const dbNameInput = document.getElementById("db-name");
+const dbDeleteKeyInput = document.getElementById("db-delete-key");
 const dbList = document.getElementById("db-list");
 
 const sectionForm = document.getElementById("section-form");
@@ -31,11 +32,13 @@ const template = document.getElementById("item-template");
 dbForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const name = dbNameInput.value.trim();
-  if (!name) return;
+  const deleteKey = dbDeleteKeyInput.value.trim();
+  if (!name || !deleteKey) return;
 
   const db = {
     id: crypto.randomUUID(),
     name,
+    deleteKey,
     sections: [],
   };
 
@@ -55,7 +58,7 @@ sectionForm.addEventListener("submit", (e) => {
 
   const name = sectionNameInput.value.trim();
   const key = sectionKeyInput.value.trim();
-  if (!name || !key) return;
+  if (!name) return;
 
   db.sections.push({
     id: crypto.randomUUID(),
@@ -137,6 +140,15 @@ function renderDatabases() {
     });
 
     deleteBtn.addEventListener("click", () => {
+      const deleteKey = db.deleteKey || "";
+      if (deleteKey) {
+        const entered = window.prompt(`Введите ключ удаления для базы "${db.name}"`) || "";
+        if (entered.trim() !== deleteKey) {
+          window.alert("Неверный ключ удаления. База не удалена.");
+          return;
+        }
+      }
+
       state.data.databases = state.data.databases.filter((x) => x.id !== db.id);
       if (state.selectedDbId === db.id) {
         state.selectedDbId = null;
@@ -172,10 +184,13 @@ function renderSections() {
 
     selectBtn.addEventListener("click", () => {
       state.selectedSectionId = section.id;
-      state.unlockedSectionId = null;
-      entryForm.classList.add("hidden");
-      sectionLockText.textContent = "Откройте раздел по ключу";
-      sectionLockText.className = "selected-mark";
+      const hasKey = Boolean(section.accessKey);
+      state.unlockedSectionId = hasKey ? null : section.id;
+      entryForm.classList.toggle("hidden", hasKey);
+      sectionLockText.textContent = hasKey
+        ? "Откройте раздел по ключу"
+        : "Раздел без ключа — доступ открыт.";
+      sectionLockText.className = hasKey ? "selected-mark" : "selected-mark notice-ok";
       render();
     });
 
@@ -200,14 +215,26 @@ function renderEntries() {
   if (!section) {
     sectionLockText.textContent = "Выберите раздел, затем откройте его ключом";
     sectionLockText.className = "selected-mark";
+    unlockForm.classList.remove("hidden");
     entryForm.classList.add("hidden");
     return;
+  }
+
+  if (!section.accessKey) {
+    sectionLockText.textContent = "Раздел без ключа — доступ открыт.";
+    sectionLockText.className = "selected-mark notice-ok";
+    unlockForm.classList.add("hidden");
+    state.unlockedSectionId = section.id;
+  } else {
+    unlockForm.classList.remove("hidden");
   }
 
   if (state.unlockedSectionId !== section.id) {
     entryForm.classList.add("hidden");
     return;
   }
+
+  entryForm.classList.remove("hidden");
 
   section.entries
     .slice()
@@ -226,6 +253,17 @@ function loadState() {
     if (!raw) return { databases: [] };
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed.databases)) return { databases: [] };
+    parsed.databases = parsed.databases.map((db) => ({
+      ...db,
+      deleteKey: typeof db.deleteKey === "string" ? db.deleteKey : "",
+      sections: Array.isArray(db.sections)
+        ? db.sections.map((section) => ({
+            ...section,
+            accessKey: typeof section.accessKey === "string" ? section.accessKey : "",
+            entries: Array.isArray(section.entries) ? section.entries : [],
+          }))
+        : [],
+    }));
     return parsed;
   } catch {
     return { databases: [] };

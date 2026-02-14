@@ -18,6 +18,7 @@
         <h2>Базы данных</h2>
         <form id="db-form" class="row-form">
           <input id="db-name" type="text" placeholder="Название базы" required />
+          <input id="db-delete-key" type="text" placeholder="Ключ удаления базы" required />
           <button type="submit">Создать базу</button>
         </form>
         <ul id="db-list" class="list"></ul>
@@ -28,7 +29,7 @@
         <div id="selected-db-name" class="selected-mark">База не выбрана</div>
         <form id="section-form" class="row-form">
           <input id="section-name" type="text" placeholder="Название раздела" required />
-          <input id="section-key" type="text" placeholder="Ключ доступа" required />
+          <input id="section-key" type="text" placeholder="Ключ доступа (необязательно)" />
           <button type="submit">Добавить раздел</button>
         </form>
         <ul id="section-list" class="list"></ul>
