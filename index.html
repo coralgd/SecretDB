@@ -10,43 +10,60 @@
   <div class="app-shell">
     <header class="app-header">
       <h1>SecretDB Console</h1>
-      <p>Локальная защищённая структура данных (позже можно подключить Firebase).</p>
+      <p>Секретная локальная база с доступом по ключам и улучшенным управлением данными.</p>
+      <div class="toolbar">
+        <button id="export-btn" type="button">Экспорт JSON</button>
+        <label class="import-label">
+          Импорт JSON
+          <input id="import-input" type="file" accept="application/json" />
+        </label>
+      </div>
     </header>
 
     <main class="layout-grid">
       <section class="panel">
-        <h2>Базы данных</h2>
+        <h2>Базы данных <span id="db-count" class="badge">0</span></h2>
         <form id="db-form" class="row-form">
           <input id="db-name" type="text" placeholder="Название базы" required />
-          <input id="db-delete-key" type="text" placeholder="Ключ удаления базы" required />
+          <input id="db-delete-key" type="password" placeholder="Ключ удаления базы" required />
+          <button id="toggle-db-key" type="button" class="ghost">👁</button>
           <button type="submit">Создать базу</button>
         </form>
         <ul id="db-list" class="list"></ul>
       </section>
 
       <section class="panel">
-        <h2>Разделы выбранной базы</h2>
+        <h2>Разделы <span id="section-count" class="badge">0</span></h2>
         <div id="selected-db-name" class="selected-mark">База не выбрана</div>
         <form id="section-form" class="row-form">
           <input id="section-name" type="text" placeholder="Название раздела" required />
-          <input id="section-key" type="text" placeholder="Ключ доступа (необязательно)" />
+          <input id="section-key" type="password" placeholder="Ключ доступа (необязательно)" />
+          <button id="toggle-section-key" type="button" class="ghost">👁</button>
           <button type="submit">Добавить раздел</button>
         </form>
         <ul id="section-list" class="list"></ul>
       </section>
 
       <section class="panel panel-wide">
-        <h2>Содержимое раздела</h2>
-        <div id="section-lock" class="selected-mark">Откройте раздел по ключу</div>
-        <form id="unlock-form" class="row-form inline">
-          <input id="unlock-key" type="text" placeholder="Введите ключ" required />
+        <h2>Содержимое раздела <span id="entry-count" class="badge">0</span></h2>
+        <div id="section-lock" class="selected-mark">Выберите раздел</div>
+
+        <form id="unlock-form" class="row-form inline hidden">
+          <input id="unlock-key" type="password" placeholder="Введите ключ" required />
+          <button id="toggle-unlock-key" type="button" class="ghost">👁</button>
           <button type="submit">Открыть</button>
         </form>
+
+        <div class="entry-tools hidden" id="entry-tools">
+          <input id="search-input" type="search" placeholder="Поиск по заголовку и содержимому" />
+        </div>
+
         <form id="entry-form" class="stack-form hidden">
           <input id="entry-title" type="text" placeholder="Заголовок записи" required />
           <textarea id="entry-content" placeholder="Секретные данные" required></textarea>
           <button type="submit">Сохранить запись</button>
         </form>
+
         <ul id="entry-list" class="list"></ul>
       </section>
     </main>

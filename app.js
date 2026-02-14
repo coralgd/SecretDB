@@ -1,33 +1,55 @@
-const STORAGE_KEY = "secretdb_app_v1";
+const STORAGE_KEY = "secretdb_app_v2";
 
 const state = {
   data: loadState(),
   selectedDbId: null,
   selectedSectionId: null,
   unlockedSectionId: null,
+  search: "",
 };
 
-const dbForm = document.getElementById("db-form");
-const dbNameInput = document.getElementById("db-name");
-const dbDeleteKeyInput = document.getElementById("db-delete-key");
-const dbList = document.getElementById("db-list");
+const $ = (id) => document.getElementById(id);
 
-const sectionForm = document.getElementById("section-form");
-const sectionNameInput = document.getElementById("section-name");
-const sectionKeyInput = document.getElementById("section-key");
-const sectionList = document.getElementById("section-list");
-const selectedDbName = document.getElementById("selected-db-name");
+const dbForm = $("db-form");
+const dbNameInput = $("db-name");
+const dbDeleteKeyInput = $("db-delete-key");
+const dbList = $("db-list");
+const dbCount = $("db-count");
 
-const unlockForm = document.getElementById("unlock-form");
-const unlockKeyInput = document.getElementById("unlock-key");
-const sectionLockText = document.getElementById("section-lock");
+const sectionForm = $("section-form");
+const sectionNameInput = $("section-name");
+const sectionKeyInput = $("section-key");
+const sectionList = $("section-list");
+const sectionCount = $("section-count");
+const selectedDbName = $("selected-db-name");
 
-const entryForm = document.getElementById("entry-form");
-const entryTitleInput = document.getElementById("entry-title");
-const entryContentInput = document.getElementById("entry-content");
-const entryList = document.getElementById("entry-list");
+const unlockForm = $("unlock-form");
+const unlockKeyInput = $("unlock-key");
+const sectionLockText = $("section-lock");
 
-const template = document.getElementById("item-template");
+const entryForm = $("entry-form");
+const entryTitleInput = $("entry-title");
+const entryContentInput = $("entry-content");
+const entryList = $("entry-list");
+const entryTools = $("entry-tools");
+const searchInput = $("search-input");
+const entryCount = $("entry-count");
+
+const exportBtn = $("export-btn");
+const importInput = $("import-input");
+
+const template = $("item-template");
+
+bindPasswordToggle("toggle-db-key", dbDeleteKeyInput);
+bindPasswordToggle("toggle-section-key", sectionKeyInput);
+bindPasswordToggle("toggle-unlock-key", unlockKeyInput);
+
+exportBtn.addEventListener("click", exportJson);
+importInput.addEventListener("change", importJson);
+searchInput.addEventListener("input", () => {
+  state.search = searchInput.value.trim().toLowerCase();
+  renderEntries();
+});
 
 dbForm.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -35,13 +57,7 @@ dbForm.addEventListener("submit", (e) => {
   const deleteKey = dbDeleteKeyInput.value.trim();
   if (!name || !deleteKey) return;
 
-  const db = {
-    id: crypto.randomUUID(),
-    name,
-    deleteKey,
-    sections: [],
-  };
-
+  const db = { id: crypto.randomUUID(), name, deleteKey, sections: [] };
   state.data.databases.push(db);
   state.selectedDbId = db.id;
   state.selectedSectionId = null;
@@ -60,13 +76,7 @@ sectionForm.addEventListener("submit", (e) => {
   const key = sectionKeyInput.value.trim();
   if (!name) return;
 
-  db.sections.push({
-    id: crypto.randomUUID(),
-    name,
-    accessKey: key,
-    entries: [],
-  });
-
+  db.sections.push({ id: crypto.randomUUID(), name, accessKey: key, entries: [] });
   sectionForm.reset();
   persist();
   render();
@@ -81,17 +91,14 @@ unlockForm.addEventListener("submit", (e) => {
     state.unlockedSectionId = section.id;
     sectionLockText.textContent = "Раздел открыт. Можно работать с данными.";
     sectionLockText.className = "selected-mark notice-ok";
-    renderEntries();
-    entryForm.classList.remove("hidden");
   } else {
     state.unlockedSectionId = null;
-    entryForm.classList.add("hidden");
     sectionLockText.textContent = "Неверный ключ доступа.";
     sectionLockText.className = "selected-mark notice-bad";
-    renderEntries();
   }
 
   unlockForm.reset();
+  renderEntries();
 });
 
 entryForm.addEventListener("submit", (e) => {
@@ -123,30 +130,30 @@ function render() {
 
 function renderDatabases() {
   dbList.innerHTML = "";
+  dbCount.textContent = String(state.data.databases.length);
 
   state.data.databases.forEach((db) => {
     const node = template.content.firstElementChild.cloneNode(true);
     const selectBtn = node.querySelector(".item-select");
     const deleteBtn = node.querySelector(".item-delete");
 
-    selectBtn.textContent = `🗄 ${db.name}`;
+    selectBtn.textContent = `🗄 ${db.name} · ${db.sections.length} раздел(ов)`;
     if (db.id === state.selectedDbId) selectBtn.classList.add("active");
 
     selectBtn.addEventListener("click", () => {
       state.selectedDbId = db.id;
       state.selectedSectionId = null;
       state.unlockedSectionId = null;
+      state.search = "";
+      searchInput.value = "";
       render();
     });
 
     deleteBtn.addEventListener("click", () => {
-      const deleteKey = db.deleteKey || "";
-      if (deleteKey) {
-        const entered = window.prompt(`Введите ключ удаления для базы "${db.name}"`) || "";
-        if (entered.trim() !== deleteKey) {
-          window.alert("Неверный ключ удаления. База не удалена.");
-          return;
-        }
+      const entered = window.prompt(`Введите ключ удаления для базы "${db.name}"`) || "";
+      if (entered.trim() !== (db.deleteKey || "")) {
+        window.alert("Неверный ключ удаления. База не удалена.");
+        return;
       }
 
       state.data.databases = state.data.databases.filter((x) => x.id !== db.id);
@@ -154,6 +161,8 @@ function renderDatabases() {
         state.selectedDbId = null;
         state.selectedSectionId = null;
         state.unlockedSectionId = null;
+        state.search = "";
+        searchInput.value = "";
       }
       persist();
       render();
@@ -169,28 +178,27 @@ function renderSections() {
 
   if (!db) {
     selectedDbName.textContent = "База не выбрана";
+    sectionCount.textContent = "0";
     return;
   }
 
   selectedDbName.textContent = `Выбрана база: ${db.name}`;
+  sectionCount.textContent = String(db.sections.length);
 
   db.sections.forEach((section) => {
     const node = template.content.firstElementChild.cloneNode(true);
     const selectBtn = node.querySelector(".item-select");
     const deleteBtn = node.querySelector(".item-delete");
 
-    selectBtn.textContent = `📁 ${section.name}`;
+    const lockMark = section.accessKey ? "🔒" : "🔓";
+    selectBtn.textContent = `${lockMark} ${section.name} · ${section.entries.length} записей`;
     if (section.id === state.selectedSectionId) selectBtn.classList.add("active");
 
     selectBtn.addEventListener("click", () => {
       state.selectedSectionId = section.id;
-      const hasKey = Boolean(section.accessKey);
-      state.unlockedSectionId = hasKey ? null : section.id;
-      entryForm.classList.toggle("hidden", hasKey);
-      sectionLockText.textContent = hasKey
-        ? "Откройте раздел по ключу"
-        : "Раздел без ключа — доступ открыт.";
-      sectionLockText.className = hasKey ? "selected-mark" : "selected-mark notice-ok";
+      state.search = "";
+      searchInput.value = "";
+      state.unlockedSectionId = section.accessKey ? null : section.id;
       render();
     });
 
@@ -213,61 +221,131 @@ function renderEntries() {
   const section = getSelectedSection();
 
   if (!section) {
-    sectionLockText.textContent = "Выберите раздел, затем откройте его ключом";
+    sectionLockText.textContent = "Выберите раздел.";
     sectionLockText.className = "selected-mark";
-    unlockForm.classList.remove("hidden");
+    unlockForm.classList.add("hidden");
     entryForm.classList.add("hidden");
+    entryTools.classList.add("hidden");
+    entryCount.textContent = "0";
     return;
   }
 
   if (!section.accessKey) {
+    state.unlockedSectionId = section.id;
     sectionLockText.textContent = "Раздел без ключа — доступ открыт.";
     sectionLockText.className = "selected-mark notice-ok";
     unlockForm.classList.add("hidden");
-    state.unlockedSectionId = section.id;
   } else {
     unlockForm.classList.remove("hidden");
-  }
-
-  if (state.unlockedSectionId !== section.id) {
-    entryForm.classList.add("hidden");
-    return;
+    if (state.unlockedSectionId !== section.id) {
+      sectionLockText.textContent = "Введите ключ доступа к разделу.";
+      sectionLockText.className = "selected-mark";
+      entryForm.classList.add("hidden");
+      entryTools.classList.add("hidden");
+      entryCount.textContent = "0";
+      return;
+    }
   }
 
   entryForm.classList.remove("hidden");
+  entryTools.classList.remove("hidden");
 
-  section.entries
+  const items = section.entries
     .slice()
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .forEach((entry) => {
-      const li = document.createElement("li");
-      li.className = "entry";
-      li.innerHTML = `<h4>${escapeHtml(entry.title)}</h4><p>${escapeHtml(entry.content)}</p>`;
-      entryList.appendChild(li);
+    .filter((entry) => {
+      if (!state.search) return true;
+      const merged = `${entry.title} ${entry.content}`.toLowerCase();
+      return merged.includes(state.search);
     });
+
+  entryCount.textContent = String(items.length);
+
+  items.forEach((entry) => {
+    const li = document.createElement("li");
+    li.className = "entry";
+    const date = new Date(entry.createdAt).toLocaleString("ru-RU");
+    li.innerHTML = `
+      <h4>${escapeHtml(entry.title)}</h4>
+      <p>${escapeHtml(entry.content)}</p>
+      <div class="entry-meta">${date}</div>
+    `;
+    entryList.appendChild(li);
+  });
+}
+
+function exportJson() {
+  const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `secretdb-export-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function importJson(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const parsed = sanitizeData(JSON.parse(text));
+    state.data = parsed;
+    state.selectedDbId = null;
+    state.selectedSectionId = null;
+    state.unlockedSectionId = null;
+    state.search = "";
+    searchInput.value = "";
+    persist();
+    render();
+  } catch {
+    window.alert("Не удалось импортировать JSON.");
+  } finally {
+    importInput.value = "";
+  }
+}
+
+function bindPasswordToggle(buttonId, input) {
+  $(buttonId).addEventListener("click", () => {
+    input.type = input.type === "password" ? "text" : "password";
+  });
 }
 
 function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("secretdb_app_v1");
     if (!raw) return { databases: [] };
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed.databases)) return { databases: [] };
-    parsed.databases = parsed.databases.map((db) => ({
-      ...db,
-      deleteKey: typeof db.deleteKey === "string" ? db.deleteKey : "",
-      sections: Array.isArray(db.sections)
-        ? db.sections.map((section) => ({
-            ...section,
-            accessKey: typeof section.accessKey === "string" ? section.accessKey : "",
-            entries: Array.isArray(section.entries) ? section.entries : [],
-          }))
-        : [],
-    }));
-    return parsed;
+    return sanitizeData(JSON.parse(raw));
   } catch {
     return { databases: [] };
   }
+}
+
+function sanitizeData(data) {
+  if (!data || !Array.isArray(data.databases)) return { databases: [] };
+
+  return {
+    databases: data.databases.map((db) => ({
+      id: typeof db.id === "string" ? db.id : crypto.randomUUID(),
+      name: typeof db.name === "string" ? db.name : "Без названия",
+      deleteKey: typeof db.deleteKey === "string" ? db.deleteKey : "",
+      sections: Array.isArray(db.sections)
+        ? db.sections.map((section) => ({
+            id: typeof section.id === "string" ? section.id : crypto.randomUUID(),
+            name: typeof section.name === "string" ? section.name : "Раздел",
+            accessKey: typeof section.accessKey === "string" ? section.accessKey : "",
+            entries: Array.isArray(section.entries)
+              ? section.entries.map((entry) => ({
+                  id: typeof entry.id === "string" ? entry.id : crypto.randomUUID(),
+                  title: typeof entry.title === "string" ? entry.title : "Без заголовка",
+                  content: typeof entry.content === "string" ? entry.content : "",
+                  createdAt: typeof entry.createdAt === "string" ? entry.createdAt : new Date().toISOString(),
+                }))
+              : [],
+          }))
+        : [],
+    })),
+  };
 }
 
 function persist() {
