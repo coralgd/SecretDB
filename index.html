@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SecretDB Console</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header panel">
+      <h1>SecretDB Console</h1>
+      <p>Аккаунты, гибкий доступ и модерация в одном интерфейсе.</p>
+      <div class="user-chip" id="current-user-chip">Не выполнен вход</div>
+    </header>
+
+    <section class="panel auth-panel" id="auth-panel">
+      <h2>Вход и аккаунты</h2>
+      <div class="auth-grid">
+        <form id="login-form" class="stack-form compact">
+          <h3>Вход</h3>
+          <input id="login-name" type="text" placeholder="Логин" required />
+          <input id="login-pass" type="password" placeholder="Пароль" required />
+          <button type="submit">Войти</button>
+        </form>
+
+        <form id="register-form" class="stack-form compact">
+          <h3>Регистрация</h3>
+          <input id="register-name" type="text" placeholder="Новый логин" required />
+          <input id="register-pass" type="password" placeholder="Новый пароль" required />
+          <button type="submit">Создать аккаунт</button>
+        </form>
+
+        <div class="stack-form compact hidden" id="session-box">
+          <h3>Сессия</h3>
+          <p id="session-text" class="selected-mark"></p>
+          <button id="logout-btn" type="button">Выйти</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel hidden" id="moderator-panel">
+      <h2>Панель модератора</h2>
+      <div class="mod-grid">
+        <div class="stack-form compact">
+          <label>Аккаунт для настройки доступа</label>
+          <select id="moderated-account"></select>
+          <div class="inline-actions">
+            <button id="grant-db-btn" type="button">Дать доступ к выбранной БД</button>
+            <button id="revoke-db-btn" type="button" class="ghost-red">Забрать доступ к БД</button>
+          </div>
+          <div class="inline-actions">
+            <button id="grant-section-btn" type="button">Дать доступ к выбранному разделу</button>
+            <button id="revoke-section-btn" type="button" class="ghost-red">Забрать доступ к разделу</button>
+          </div>
+          <p class="selected-mark" id="mod-hint">Выберите БД/раздел в основных списках и примените действие.</p>
+        </div>
+      </div>
+    </section>
+
+    <main class="layout-grid hidden" id="workspace">
+      <section class="panel">
+        <h2>Базы данных <span id="db-count" class="badge">0</span></h2>
+        <form id="db-form" class="row-form hidden">
+          <input id="db-name" type="text" placeholder="Название базы" required />
+          <input id="db-delete-key" type="password" placeholder="Ключ удаления" required />
+          <button type="submit">Создать</button>
+        </form>
+        <ul id="db-list" class="list"></ul>
+      </section>
+
+      <section class="panel">
+        <h2>Разделы <span id="section-count" class="badge">0</span></h2>
+        <div id="selected-db-name" class="selected-mark">База не выбрана</div>
+        <form id="section-form" class="row-form hidden">
+          <input id="section-name" type="text" placeholder="Название раздела" required />
+          <input id="section-key" type="password" placeholder="Ключ доступа (необязательно)" />
+          <button type="submit">Добавить</button>
+        </form>
+        <ul id="section-list" class="list"></ul>
+      </section>
+
+      <section class="panel panel-wide">
+        <h2>Записи <span id="entry-count" class="badge">0</span></h2>
+        <div id="section-lock" class="selected-mark">Выберите раздел</div>
+
+        <form id="unlock-form" class="row-form inline hidden">
+          <input id="unlock-key" type="password" placeholder="Введите ключ" required />
+          <button type="submit">Открыть</button>
+        </form>
+
+        <div class="entry-tools hidden" id="entry-tools">
+          <input id="search-input" type="search" placeholder="Поиск по записям" />
+          <button id="clear-search-btn" type="button">✕</button>
+        </div>
+
+        <form id="entry-form" class="stack-form hidden">
+          <input id="entry-title" type="text" placeholder="Заголовок" required />
+          <textarea id="entry-content" placeholder="Содержимое" required></textarea>
+          <button type="submit">Сохранить</button>
+        </form>
+
+        <ul id="entry-list" class="list"></ul>
+      </section>
+    </main>
+  </div>
+
+  <template id="item-template">
+    <li class="item-row">
+      <button class="item-select"></button>
+      <button class="item-delete">Удалить</button>
+    </li>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
